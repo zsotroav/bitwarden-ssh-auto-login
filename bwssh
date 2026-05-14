@@ -40,18 +40,18 @@ doBwssh() {
 	objectId=$2
 
 	# ensure login
-	local sessionId=$(bw login --raw || echo failed)
+	local sessionId=$(bw login --check --raw || echo failed)
 	if [[ "$(echo "$sessionId" | tail -1)" == "failed" ]]; then
 		if [[ "$(echo "$sessionId" | grep '^You are already logged in')" == "" ]]; then
 			echo "Login failed: $(echo "$sessionId" | head -n -1)"
 			return
 		fi
-	else
+	elif [[ ! -z "$sessionId" ]]; then
 		export BW_SESSION="$sessionId"
 	fi
 
 	# unlock if no session
-	if [[ "${BW_SESSION}" == "" ]]; then
+	if [[ $BW_SESSION == "" ]]; then
 		local sessionId=$(bw unlock --raw || echo failed)
 		if [[ "$(echo "$sessionId" | tail -1)" == "failed" ]]; then
 			echo "Unlock failed: $(echo "$sessionId" | head -n -1)"
@@ -62,7 +62,7 @@ doBwssh() {
 	fi
 
 	# try get
-	local secret=$(bw get item $objectId || echo failed)
+	local secret=$(bw get item $objectId --session $BW_SESSION || echo failed)
 	if [[ "$(echo "$secret" | tail -1)" == "failed" ]]; then
 		echo "Get item failed: $(echo "$secret" | head -n -1)"
 		echo "(might be duplicated bw session, auto clear old session, just retry)"
